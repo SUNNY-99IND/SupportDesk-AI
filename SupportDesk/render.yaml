@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: supportdesk-ai-backend
+    env: node
+    rootDir: SupportDesk/backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
