@@ -1,206 +1,181 @@
-# SupportDesk AI
+🚀 SupportDesk AI — Product Requirements Document
 
-An AI-assisted customer support platform for small businesses. Customers raise tickets, agents
-resolve them, and an AI assistant answers questions, classifies incoming requests, and drafts responses.
+Status: 🚧 In Development
+Version: 1.0
 
-> **Status: Full-Stack Implementation Complete**
-> All core PRD requirements (Authentication, RBAC, Ticket CRUD, PostgreSQL relational schema with SQL JOINs,
-> MongoDB document store, AI classification & structured outputs, and React 19 client) are implemented and verified.
+1. Product Overview
 
----
+SupportDesk AI is an AI-powered customer support platform that helps businesses manage customer queries, support tickets, and conversations from one centralized system.
 
-## Tech stack
+It combines ticket management, real-time communication, AI assistance, knowledge-base search, and analytics into a single platform.
 
-| Layer      | Choice                                                            |
-| ---------- | ----------------------------------------------------------------- |
-| Frontend   | React 19, TypeScript, Tailwind CSS, React Router 7, Vite 6, Lucide|
-| Backend    | Node.js 22, Express 4, TypeScript, Zod, JWT, Bcrypt               |
-| Databases  | PostgreSQL 16 (relational), MongoDB 7 (documents) + Memory Store  |
-| AI Layer   | LLM API (Structured Zod Outputs, Sentiment, Ticket Classification)|
-| Tooling    | ESLint 9, Prettier 3, GitHub Actions                              |
+⸻
 
----
+2. Problem
 
-## Demo Personas
+Businesses often manage customer support through multiple platforms, spreadsheets, and manual processes. This can cause:
 
-| Role | Demo Username / Identity | Description |
-| ---- | ------------------------ | ----------- |
-| **Customer** | Customer Persona | Raise tickets, track status, chat with AI Copilot |
-| **Support Agent** | Agent Persona | Manage ticket queue, draft AI-assisted responses |
-| **Admin** | Admin Persona | System oversight, manage user roles, view telemetry |
+* Slow responses
+* Missed support requests
+* Repetitive work
+* Poor ticket tracking
+* Limited support analytics
 
-*(Use the 1-click persona buttons on the Login page or Navbar to switch roles instantly without typing passwords).*
+⸻
 
----
+3. Solution
 
-## Prerequisites
+SupportDesk AI provides a centralized platform where:
 
-- **Node.js 20 or newer** (`node -v`) and npm
-- **Docker Desktop** — only needed from Phase 2 onward, for the local databases
+* Customers can create and track tickets.
+* Agents can manage and respond to tickets.
+* Admins can manage users and support operations.
+* AI can assist with customer questions and agent responses.
+* Knowledge-base content can be used to provide relevant AI answers.
 
----
+⸻
 
-## Getting started
+4. Users
 
-Two terminals, one for each app.
+Customer
 
-### 1. Backend
+* Register/Login
+* Create tickets
+* Chat with support
+* Track ticket status
+* Use AI assistant
 
-```bash
-cd backend
-cp .env.example .env      # then open .env and review the values
-npm install
-npm run dev
-```
+Support Agent
 
-The API starts on <http://localhost:5000>.
+* Manage assigned tickets
+* Respond to customers
+* Update ticket status/priority
+* Get AI reply suggestions
+* Summarize conversations
 
-### 2. Frontend
+Admin
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+* Manage users and agents
+* Manage tickets
+* Manage knowledge base
+* View analytics
+* Monitor AI usage
 
-The app starts on <http://localhost:5173>. Open it in a browser — the setup check page should
-report **Online**.
+⸻
 
-`frontend/.env` is optional in development; the defaults are correct as-is.
+5. Key Features
 
----
+* 🔐 JWT Authentication & Password Hashing
+* 👥 Role-Based Access Control
+* 🎫 Ticket CRUD & Management
+* 💬 Real-Time Chat using Socket.IO
+* 🤖 AI Customer Support Assistant
+* ✨ AI Reply Suggestions & Summarization
+* 📚 Knowledge Base
+* 🔎 RAG with Embeddings & Vector Search
+* 🛠️ AI Function Calling / Tools
+* 🔄 Multi-Step AI Agent
+* ⚡ Streaming AI Responses
+* 📊 Support & AI Analytics
+* 🛡️ Rate Limiting & Input Validation
+* 🔒 Prompt Injection Protection
+* 💰 AI Token & Cost Monitoring
 
-## Verifying the setup
+⸻
 
-```bash
-curl -i http://localhost:5000/api/health
-```
+6. Technology Stack
 
-Expected — HTTP 200 with:
+Frontend
 
-```json
-{ "success": true, "message": "SupportDesk AI API is running" }
-```
+* React
+* TypeScript
+* Tailwind CSS
+* React Router
 
-Two more checks worth running, because they prove the error paths work:
+Backend
 
-```bash
-# Unknown route -> 404 in the standard failure envelope
-curl -i http://localhost:5000/api/does-not-exist
-# => { "success": false, "message": "Route GET /api/does-not-exist not found" }
-```
+* Node.js
+* Express.js
+* TypeScript
+* REST API
+* Socket.IO
 
-In the browser, click **Check again** on the setup page. Then stop the backend
-(`Ctrl+C`) and click it again — the card must switch to **Unreachable** with a readable message
-rather than hanging or showing a blank screen.
+Databases
 
----
+* MongoDB — tickets, messages, conversations, knowledge data
+* PostgreSQL — users, roles, relationships
 
-## Available scripts
+AI
 
-Run these inside `backend/` or `frontend/`.
+* LLM API
+* Prompt Engineering
+* Structured Outputs
+* Embeddings
+* RAG
+* Function Calling
+* AI Agents
 
-| Script              | Does                                            |
-| ------------------- | ----------------------------------------------- |
-| `npm run dev`       | Start with hot reload                           |
-| `npm run build`     | Type-check and produce a production build       |
-| `npm start`         | Run the built backend (`backend/` only)         |
-| `npm run typecheck` | Type-check without emitting files               |
-| `npm run lint`      | ESLint                                          |
-| `npm run format`    | Rewrite files with Prettier                     |
+⸻
 
----
+7. System Architecture
 
-## Project structure
+React Frontend
+      ↓
+Express REST API
+      ↓
+Backend Services
+   ↙       ↓       ↘
+MongoDB PostgreSQL  LLM API
+                    ↓
+                 RAG / AI
 
-```text
-SupportDesk/
-├── backend/              Express REST API
-│   └── src/
-│       ├── config/       env loading and validation
-│       ├── controllers/  HTTP in, HTTP out — thin
-│       ├── middleware/   cross-cutting request handling
-│       ├── models/       database models (Phase 2)
-│       ├── routes/       URL to controller mapping
-│       ├── services/     business logic (Phase 3+)
-│       ├── utils/        shared helpers
-│       ├── validators/   Zod request schemas (Phase 3+)
-│       ├── app.ts        builds the Express app
-│       └── server.ts     binds it to a port
-│
-├── frontend/             React single-page app
-│   └── src/
-│       ├── components/   reusable UI pieces
-│       ├── pages/        one file per route
-│       ├── layouts/      page chrome
-│       ├── hooks/        custom React hooks
-│       ├── services/     API calls
-│       ├── types/        shared TypeScript types
-│       ├── App.tsx       route table
-│       └── main.tsx      browser entry point
-│
-├── docs/                 PRD, architecture, database, API, deployment
-├── .github/workflows/    CI pipeline
-└── docker-compose.yml    local PostgreSQL + MongoDB
-```
+⸻
 
----
+8. Security
 
-## Environment variables
+The application will implement:
 
-Nothing secret is ever committed. Each app ships a `.env.example`; copy it to `.env` and fill in
-real values locally.
+* JWT authentication
+* Password hashing
+* Role-based authorization
+* Input validation & sanitization
+* Rate limiting
+* Secure environment variables
+* Prompt-injection defenses
+* Protected API routes
 
-| File                   | Purpose                                             | Committed? |
-| ---------------------- | --------------------------------------------------- | ---------- |
-| `backend/.env.example` | Template for server config and secrets              | Yes        |
-| `backend/.env`         | Real server values, including the LLM API key later | **No**     |
-| `frontend/.env`        | Public build-time values only (`VITE_*`)            | **No**     |
-| `.env.example` (root)  | Database credentials for `docker-compose.yml`       | Yes        |
+⸻
 
-Anything named `VITE_*` is compiled into the JavaScript bundle and is readable by anyone. API keys
-and secrets belong in `backend/.env` only.
+9. Development Approach
 
----
+The project will be developed phase by phase:
 
-## Roadmap
+Setup
+ ↓
+Database
+ ↓
+Authentication
+ ↓
+Tickets
+ ↓
+Frontend
+ ↓
+AI Integration
+ ↓
+RAG & AI Agent
+ ↓
+Real-Time Chat
+ ↓
+Analytics
+ ↓
+Testing
+ ↓
+Deployment
 
-| Phase     | Scope                                       | Status |
-| --------- | ------------------------------------------- | ------ |
-| 1         | Project setup, tooling, health endpoint     | Done   |
-| 2         | PostgreSQL + MongoDB schemas                | Next   |
-| 3         | Auth: JWT, password hashing, RBAC           | —      |
-| 4         | Ticket CRUD                                 | —      |
-| 5–6       | Frontend pages and API integration          | —      |
-| 7–9       | AI assistant, structured output, classifying| —      |
-| 10–12     | Knowledge base, RAG, tool calling, agent    | —      |
-| 13–14     | AI security, streaming                      | —      |
-| 15–16     | Real-time chat, analytics                   | —      |
-| 17–19     | LLM evaluation, hardening, tests            | —      |
-| 20        | Deployment                                  | —      |
+⸻
 
----
+10. Success Criteria
 
-## Git workflow
+The project will be considered successful when customers, agents, and admins can use the platform to manage support operations, while AI can safely assist with support tasks using business knowledge.
 
-`main` holds working code only. Work happens on feature branches merged into `develop`.
-
-```bash
-git checkout -b feature/database
-# ...work...
-git commit -m "feat: add postgres and mongo connections"
-```
-
-Commit messages follow Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`,
-`test:`.
-
----
-
-## Documentation
-
-- [docs/PRD.md](docs/PRD.md) — product requirements
-- [docs/Architecture.md](docs/Architecture.md) — how requests flow, and open decisions
-- [docs/Database.md](docs/Database.md) — which database owns which data
-- [docs/API.md](docs/API.md) — endpoint reference
-- [docs/Deployment.md](docs/Deployment.md) — production plan
-
+Project Status: 🚧 Work in Progress
