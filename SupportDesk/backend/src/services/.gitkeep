@@ -1,0 +1,3 @@
+# Placeholder so git tracks this folder.
+# Business logic lives here from Phase 3 onward (auth, tickets, AI).
+# Controllers stay thin; services do the work.

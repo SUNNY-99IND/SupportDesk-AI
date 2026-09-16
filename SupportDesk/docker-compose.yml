@@ -1,0 +1,54 @@
+# =============================================================================
+# Local development databases for SupportDesk AI.
+#
+#   docker compose up -d      start both databases in the background
+#   docker compose ps         check they are healthy
+#   docker compose down       stop them (data is kept)
+#   docker compose down -v    stop them AND delete all data
+#
+# Credentials come from the root .env file. Create it first:
+#   cp .env.example .env
+#
+# Phase 1 does not need these running — the health endpoint touches no database.
+# They are here so Phase 2 is a single command away.
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: supportdesk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-supportdesk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
+      POSTGRES_DB: ${POSTGRES_DB:-supportdesk}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-supportdesk}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    container_name: supportdesk-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-supportdesk}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-change_me_locally}
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  mongo-data:
