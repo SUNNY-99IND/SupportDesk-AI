@@ -47,6 +47,17 @@ export function createApp(): Application {
     app.use(morgan('dev'));
   }
 
+  // Friendly greeting and server information for GET /
+  app.get('/', (_req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'SupportDesk AI REST API Server',
+      status: 'ONLINE',
+      health: '/api/health',
+      apiBase: '/api',
+    });
+  });
+
   // All application routes live under /api.
   app.use('/api', apiRoutes);
 
