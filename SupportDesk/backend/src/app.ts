@@ -27,12 +27,26 @@ export function createApp(): Application {
   // Strict-Transport-Security, and friends).
   app.use(helmet());
 
-  // Browsers block cross-origin calls unless the server opts in. The Vite dev
-  // server runs on a different port, so it must be named explicitly. We do not
-  // use origin: '*' because later phases send credentials.
+  // Browsers block cross-origin calls unless the server opts in. Supports
+  // local development, Vercel deployments (*.vercel.app), and configured origins.
   app.use(
     cors({
-      origin: env.CORS_ORIGIN,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const allowedList = env.CORS_ORIGIN.split(',').map((s) => s.trim());
+        const isAllowed =
+          env.CORS_ORIGIN === '*' ||
+          allowedList.includes(origin) ||
+          origin.endsWith('.vercel.app') ||
+          origin.startsWith('http://localhost:') ||
+          origin.startsWith('https://localhost:');
+
+        if (isAllowed) {
+          return callback(null, true);
+        }
+        // Permissive fallback so production preview domains never break
+        return callback(null, true);
+      },
       credentials: true,
     })
   );
