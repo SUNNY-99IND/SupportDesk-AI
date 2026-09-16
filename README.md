@@ -21,13 +21,15 @@ resolve them, and an AI assistant answers questions, classifies incoming request
 
 ---
 
-## ⚡ 1-Click Demo Accounts (Fast Testing)
+## Demo Personas
 
-| Role | Email | Password | Permissions & Views |
-| ---- | ----- | -------- | ------------------- |
-| **Customer** | `customer@supportdesk.ai` | `Password123!` | Raise tickets, view my tickets, chat with AI Copilot |
-| **Support Agent** | `agent@supportdesk.ai` | `Password123!` | View queue, manage assigned tickets, generate AI replies |
-| **Admin** | `admin@supportdesk.ai` | `Password123!` | Manage users, change roles, view system telemetry & stats |
+| Role | Demo Username / Identity | Description |
+| ---- | ------------------------ | ----------- |
+| **Customer** | Customer Persona | Raise tickets, track status, chat with AI Copilot |
+| **Support Agent** | Agent Persona | Manage ticket queue, draft AI-assisted responses |
+| **Admin** | Admin Persona | System oversight, manage user roles, view telemetry |
+
+*(Use the 1-click persona buttons on the Login page or Navbar to switch roles instantly without typing passwords).*
 
 ---
 
