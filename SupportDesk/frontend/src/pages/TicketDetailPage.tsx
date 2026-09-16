@@ -11,6 +11,12 @@ import { getSuggestedReply } from '../services/ai.service';
 import { useAuth } from '../context/AuthContext';
 import type { Ticket, TicketMessage, TicketStatus, TicketPriority } from '../types/ticket';
 import {
+  formatTicketDisplayId,
+  executePromiseChaining,
+  traceEventLoopExecution,
+  type EventLoopTraceStep,
+} from '../utils/jsConcepts';
+import {
   ArrowLeft,
   Send,
   Sparkles,
@@ -21,6 +27,9 @@ import {
   AlertCircle,
   Calendar,
   Check,
+  Activity,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export function TicketDetailPage() {
@@ -37,6 +46,11 @@ export function TicketDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
+  // Runtime JS Concept State Demonstrations
+  const [promiseDiag, setPromiseDiag] = useState<string | null>(null);
+  const [eventLoopTraces, setEventLoopTraces] = useState<EventLoopTraceStep[]>([]);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+
   const isStaff = user?.roles.includes('AGENT') || user?.roles.includes('ADMIN');
   const isAdmin = user?.roles.includes('ADMIN');
 
@@ -52,6 +66,16 @@ export function TicketDetailPage() {
         ]);
         setTicket(ticketData);
         setMessages(messageData);
+
+        // Explicitly triggers Promise chaining (.then & .catch) demonstration
+        executePromiseChaining(id).then((diag) => {
+          setPromiseDiag(diag);
+        });
+
+        // Explicitly executes Event Loop (Call Stack -> Microtasks -> Macrotasks) demonstration
+        traceEventLoopExecution(`Ticket-${id.slice(-4)}`).then((traces) => {
+          setEventLoopTraces(traces);
+        });
       } catch (err: any) {
         setError(err.message || 'Failed to load ticket details');
       } finally {
@@ -207,7 +231,10 @@ export function TicketDetailPage() {
               <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                 {ticket.category}
               </span>
-              <span className="text-xs text-slate-400">ID: {ticket._id}</span>
+              <span className="font-mono text-xs font-bold text-brand-600 dark:text-brand-400">
+                {formatTicketDisplayId(ticket._id)}
+              </span>
+              <span className="text-xs text-slate-400">({ticket._id})</span>
             </div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white sm:text-2xl">
               {ticket.title}
@@ -322,6 +349,99 @@ export function TicketDetailPage() {
           )}
         </div>
       )}
+
+      {/* JavaScript Core Concepts Architecture & Diagnostics */}
+      <div className="rounded-2xl border border-indigo-200/80 bg-indigo-50/50 p-5 backdrop-blur-sm dark:border-indigo-900/40 dark:bg-indigo-950/20">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="grid size-7 place-items-center rounded-lg bg-indigo-600 text-white shadow-xs">
+              <Activity className="size-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-indigo-950 dark:text-indigo-100">
+                JavaScript Core Concepts Verification
+              </h4>
+              <p className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">
+                Live runtime proof: Function Hoisting • Promises vs Callbacks • Event Loop Queues
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDiagnostics((prev) => !prev)}
+            className="flex items-center gap-1.5 rounded-xl border border-indigo-300/80 bg-white/80 px-3 py-1 text-xs font-semibold text-indigo-700 shadow-xs transition hover:bg-white dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300"
+          >
+            <span>{showDiagnostics ? 'Hide Traces' : 'Inspect Traces'}</span>
+            {showDiagnostics ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+          </button>
+        </div>
+
+        {showDiagnostics && (
+          <div className="mt-4 space-y-4 border-t border-indigo-200/60 pt-4 text-xs dark:border-indigo-900/60">
+            {/* 1. Hoisting */}
+            <div className="rounded-xl border border-indigo-100 bg-white/90 p-3.5 dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="font-bold text-slate-900 dark:text-white">
+                1. JavaScript Hoisting
+              </div>
+              <p className="mt-1 text-slate-600 dark:text-slate-300">
+                Function declaration <code>formatTicketDisplayId(rawId)</code> was evaluated and invoked at module initialization <strong>before</strong> its line of definition in <code className="text-indigo-600 dark:text-indigo-400">jsConcepts.ts</code>.
+              </p>
+              <div className="mt-2 flex items-center gap-2 font-mono text-[11px]">
+                <span className="rounded bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                  Hoisted Output:
+                </span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {formatTicketDisplayId(ticket._id)}
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Promises vs Callbacks */}
+            <div className="rounded-xl border border-indigo-100 bg-white/90 p-3.5 dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="font-bold text-slate-900 dark:text-white">
+                2. Promises vs Callbacks (Linear Chaining & Error Handling)
+              </div>
+              <p className="mt-1 text-slate-600 dark:text-slate-300">
+                Traditional error-first callback <code>(err, data) =&gt; void</code> wrapped into a modern Promise via <code>new Promise(resolve, reject)</code> and chained with <code>.then()</code> and <code>.catch()</code>.
+              </p>
+              <div className="mt-2 rounded-lg bg-slate-50 p-2.5 font-mono text-[11px] text-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                {promiseDiag || 'Resolving Promise chain...'}
+              </div>
+            </div>
+
+            {/* 3. Event Loop */}
+            <div className="rounded-xl border border-indigo-100 bg-white/90 p-3.5 dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="font-bold text-slate-900 dark:text-white">
+                3. JavaScript Event Loop Execution Order
+              </div>
+              <p className="mt-1 text-slate-600 dark:text-slate-300">
+                Demonstrating that the <strong>Call Stack</strong> executes first, followed by the complete <strong>Microtask Queue</strong> (<code>queueMicrotask</code> &amp; Promises), and finally the <strong>Macrotask Queue</strong> (<code>setTimeout</code>):
+              </p>
+              <div className="mt-2.5 space-y-1.5 font-mono text-[11px]">
+                {eventLoopTraces.map((trace) => (
+                  <div
+                    key={trace.step}
+                    className="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-950"
+                  >
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        trace.type === 'SYNCHRONOUS'
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          : trace.type === 'MICROTASK'
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
+                      }`}
+                    >
+                      Step {trace.step}: {trace.type}
+                    </span>
+                    <span className="text-slate-700 dark:text-slate-300">{trace.description}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Conversation Thread */}
       <div className="rounded-2xl border border-slate-200/80 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70">

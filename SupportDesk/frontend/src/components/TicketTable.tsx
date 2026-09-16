@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { Ticket } from '../types/ticket';
 import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
+import { formatTicketDisplayId } from '../utils/jsConcepts';
 import { ChevronRight, Sparkles, UserCheck, Clock } from 'lucide-react';
 
 interface TicketTableProps {
@@ -65,6 +66,9 @@ export function TicketTable({ tickets, isLoading }: TicketTableProps) {
                   >
                     <div className="line-clamp-1">{t.title}</div>
                     <div className="mt-0.5 flex items-center gap-2 text-xs font-normal text-slate-500 dark:text-slate-400">
+                      <span className="font-mono text-[10px] font-semibold text-brand-600 dark:text-brand-400">
+                        {formatTicketDisplayId(t._id)}
+                      </span>
                       <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {t.category}
                       </span>
