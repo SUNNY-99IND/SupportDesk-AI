@@ -1,9 +1,8 @@
 import { useAuth } from '../context/AuthContext';
 import { User, Building2, Key } from 'lucide-react';
-import type { Role } from '../types/auth';
 
 export function ProfilePage() {
-  const { user, switchDemoUser } = useAuth();
+  const { user } = useAuth();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -58,33 +57,6 @@ export function ProfilePage() {
               Active Session (HMAC-SHA256)
             </p>
             <p className="mt-0.5 text-[11px] text-slate-400">Validated via Express Bearer middleware</p>
-          </div>
-        </div>
-
-        {/* Demo persona testing switch */}
-        <div className="mt-8 rounded-xl border border-brand-200 bg-brand-50/60 p-4 dark:border-brand-900/40 dark:bg-brand-950/20">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-brand-700 dark:text-brand-300">
-            Testing Persona Switcher
-          </h4>
-          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
-            Instantly switch between roles to test RBAC rules and views:
-          </p>
-
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {(['CUSTOMER', 'AGENT', 'ADMIN'] as Role[]).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => switchDemoUser(r)}
-                className={`rounded-xl border p-2 text-xs font-medium transition ${
-                  user?.roles.includes(r)
-                    ? 'border-brand-600 bg-brand-600 text-white'
-                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                }`}
-              >
-                {r === 'CUSTOMER' ? '👤 Customer' : r === 'AGENT' ? '🎧 Agent' : '🛡️ Admin'}
-              </button>
-            ))}
           </div>
         </div>
       </div>

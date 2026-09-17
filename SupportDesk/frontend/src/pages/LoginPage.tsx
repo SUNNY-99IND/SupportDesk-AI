@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bot, LogIn, AlertCircle, Shield, Headphones, User } from 'lucide-react';
-import type { Role } from '../types/auth';
+import { Bot, LogIn, AlertCircle } from 'lucide-react';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,7 +9,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, switchDemoUser } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,23 +23,15 @@ export function LoginPage() {
       await login({ email, password });
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
+      setError(err.message || 'Invalid email or password');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDemoClick = async (role: Role) => {
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      await switchDemoUser(role);
-      navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      setError(err.message || 'Demo login failed');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleFillCredentials = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword('Password123!');
   };
 
   return (
@@ -59,37 +50,37 @@ export function LoginPage() {
           </p>
         </div>
 
-        {/* Demo Fast Login Box */}
-        <div className="rounded-2xl border border-brand-200/80 bg-brand-50/60 p-4 dark:border-brand-900/50 dark:bg-brand-950/30">
-          <p className="text-center text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
-            ⚡ 1-Click Demo Personas
+        {/* Demo Credentials Helper Box - Fills form inputs only, does NOT auto-login */}
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+          <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+            Demo Test Accounts (Password: Password123!)
           </p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-2.5 grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => handleDemoClick('CUSTOMER')}
-              className="flex flex-col items-center gap-1 rounded-xl border border-brand-200 bg-white p-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              onClick={() => handleFillCredentials('customer@supportdesk.ai')}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-medium text-slate-700 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             >
-              <User className="size-4 text-brand-600" />
-              <span>Customer</span>
+              Fill Customer
             </button>
             <button
               type="button"
-              onClick={() => handleDemoClick('AGENT')}
-              className="flex flex-col items-center gap-1 rounded-xl border border-brand-200 bg-white p-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              onClick={() => handleFillCredentials('agent@supportdesk.ai')}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-medium text-slate-700 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             >
-              <Headphones className="size-4 text-indigo-600" />
-              <span>Agent</span>
+              Fill Agent
             </button>
             <button
               type="button"
-              onClick={() => handleDemoClick('ADMIN')}
-              className="flex flex-col items-center gap-1 rounded-xl border border-brand-200 bg-white p-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+              onClick={() => handleFillCredentials('admin@supportdesk.ai')}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-medium text-slate-700 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             >
-              <Shield className="size-4 text-purple-600" />
-              <span>Admin</span>
+              Fill Admin
             </button>
           </div>
+          <p className="mt-2 text-center text-[11px] text-slate-400">
+            Clicking fills email/password. You must click &quot;Sign In&quot; to verify credentials with backend.
+          </p>
         </div>
 
         {/* Form Card */}

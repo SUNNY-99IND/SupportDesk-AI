@@ -9,9 +9,13 @@ import type { ApiResponse, ApiSuccess } from '../types/api';
 
 // Empty in development: '/api/health' then hits the Vite dev server, which
 // proxies to Express. In production this is the deployed API origin.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+// Normalize BASE_URL so trailing slashes never produce invalid double-slash paths.
+// In development, empty string uses Vite's local dev proxy (/api -> :5001).
+// In production, this resolves to the deployed backend origin.
+const rawBase = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').trim();
+const BASE_URL = rawBase.replace(/\/+$/, '');
 
-const DEFAULT_TIMEOUT_MS = 8000;
+const DEFAULT_TIMEOUT_MS = 10000;
 
 /** An error we can show to the user, carrying the HTTP status when we have one. */
 export class ApiError extends Error {
@@ -27,8 +31,7 @@ export class ApiError extends Error {
 /**
  * Perform a request and unwrap the `{ success, ... }` envelope.
  *
- * Resolves with the envelope on success, throws ApiError otherwise. Callers
- * therefore only need try/catch, not two layers of checking.
+ * Resolves with the envelope on success, throws ApiError otherwise.
  */
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<ApiSuccess<T>> {
   let response: Response;
@@ -40,42 +43,46 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     ...(init.headers as Record<string, string>),
   };
 
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const requestUrl = BASE_URL ? `${BASE_URL}${normalizedPath}` : normalizedPath;
+
   try {
-    response = await fetch(`${BASE_URL}${path}`, {
+    response = await fetch(requestUrl, {
       ...init,
       headers,
-      // Aborts a request that hangs, so the UI never spins forever. If the
-      // caller passed its own signal (component unmounted, user cancelled),
-      // both are honoured — whichever fires first wins.
+      // Aborts a request that hangs, so the UI never spins forever.
       signal: init.signal
         ? AbortSignal.any([init.signal, AbortSignal.timeout(DEFAULT_TIMEOUT_MS)])
         : AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
   } catch (error) {
-    // fetch() only rejects for network-level failures: server down, DNS,
-    // offline, or our own abort.
     if (error instanceof DOMException && error.name === 'TimeoutError') {
-      throw new ApiError('The server took too long to respond.');
+      throw new ApiError('The server took too long to respond. Please check your connection.');
     }
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new ApiError('Request cancelled.');
     }
-    throw new ApiError('Cannot reach the API. Is the backend running on port 5001?');
+    throw new ApiError('Unable to connect to the SupportDesk API. Please try again shortly.');
   }
 
   let body: ApiResponse<T>;
   try {
     body = (await response.json()) as ApiResponse<T>;
   } catch {
-    throw new ApiError(`Server returned a non-JSON response (HTTP ${response.status}).`, response.status);
+    throw new ApiError(
+      response.status === 404
+        ? 'Requested service was not found.'
+        : `Server communication failed (HTTP ${response.status}).`,
+      response.status
+    );
   }
 
-  // Two separate checks, not one combined condition. TypeScript can only
-  // narrow `body` to the success shape if the failure case is tested on its
-  // own — `if (!response.ok || body.success === false)` would compile the
-  // check but leave `body` typed as the full union below.
   if (body.success === false) {
-    throw new ApiError(body.message, response.status);
+    let message = body.message;
+    if (response.status === 404 && message.toLowerCase().includes('route')) {
+      message = 'The requested endpoint is temporarily unavailable. Please try again.';
+    }
+    throw new ApiError(message, response.status);
   }
 
   if (!response.ok) {

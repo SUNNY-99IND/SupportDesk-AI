@@ -1,9 +1,10 @@
-import { Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { AppShell } from './layouts/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Pages
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -15,26 +16,20 @@ import { AdminPage } from './pages/AdminPage';
 import { SystemStatusPage } from './pages/SystemStatusPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
-function RootRedirect() {
-  const { isAuthenticated, isLoading } = useAuth();
-  if (isLoading) return null;
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
-}
-
 export default function App() {
   return (
     <AuthProvider>
       <AppShell>
         <Routes>
-          {/* Root Redirect */}
-          <Route path="/" element={<RootRedirect />} />
+          {/* Public Landing Page */}
+          <Route path="/" element={<LandingPage />} />
 
-          {/* Public Auth Routes */}
+          {/* Public Auth & Info Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/status" element={<SystemStatusPage />} />
 
-          {/* Protected Application Routes */}
+          {/* Customer / General Authenticated Routes */}
           <Route
             path="/dashboard"
             element={
@@ -44,9 +39,41 @@ export default function App() {
             }
           />
           <Route
+            path="/customer/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'AGENT', 'ADMIN']}>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['AGENT', 'ADMIN']}>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/tickets"
             element={
               <ProtectedRoute>
+                <TicketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer/tickets"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'AGENT', 'ADMIN']}>
+                <TicketsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agent/tickets"
+            element={
+              <ProtectedRoute allowedRoles={['AGENT', 'ADMIN']}>
                 <TicketsPage />
               </ProtectedRoute>
             }
@@ -76,9 +103,17 @@ export default function App() {
             }
           />
 
-          {/* Admin Restricted Route */}
+          {/* Admin Restricted Routes */}
           <Route
             path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminPage />
