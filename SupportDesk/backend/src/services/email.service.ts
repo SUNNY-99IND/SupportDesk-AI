@@ -10,26 +10,23 @@ let transporter: Transporter | null = null;
 function getTransporter(): Transporter | null {
   if (transporter) return transporter;
 
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD;
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || '').trim();
+  const rawPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD || '';
+  const pass = rawPass.replace(/\s+/g, '');
+  const host = (process.env.SMTP_HOST || '').trim();
+  const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 465;
 
   if (user && pass) {
-    if (host) {
-      transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
-    } else {
-      // Default to Gmail service if host not explicitly provided
-      transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user, pass },
-      });
-    }
+    transporter = nodemailer.createTransport({
+      host: host || 'smtp.gmail.com',
+      port: host ? port : 465,
+      secure: host ? port === 465 : true,
+      auth: { user, pass },
+      // Strict 4-second timeouts to prevent hanging if cloud host (e.g. Render free tier) blocks SMTP ports
+      connectionTimeout: 4000,
+      greetingTimeout: 4000,
+      socketTimeout: 4000,
+    });
     return transporter;
   }
 
@@ -39,7 +36,8 @@ function getTransporter(): Transporter | null {
 export function isSmtpConfigured(): boolean {
   const user = process.env.SMTP_USER || process.env.GMAIL_USER;
   const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD;
-  return Boolean(user && pass);
+  const resendKey = process.env.RESEND_API_KEY;
+  return Boolean((user && pass) || resendKey);
 }
 
 /**
@@ -98,6 +96,37 @@ export async function sendOtpEmail({ to, otp }: SendOtpOptions): Promise<{ sent:
     </html>
   `;
 
+  // 1. Try Resend HTTP API first if configured (works over port 443 HTTPS, never blocked by cloud firewalls like Render free tier)
+  const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
+  if (resendApiKey) {
+    try {
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM || 'SupportDesk AI <onboarding@resend.dev>',
+          to: [to],
+          subject: `${otp} is your SupportDesk AI verification code`,
+          html: htmlContent,
+        }),
+      });
+
+      if (resendRes.ok) {
+        console.log(`[EMAIL SERVICE] Verification OTP successfully sent to ${to} via Resend HTTP API`);
+        return { sent: true };
+      } else {
+        const errorText = await resendRes.text();
+        console.error(`[EMAIL SERVICE] Resend API error (${resendRes.status}):`, errorText);
+      }
+    } catch (err: any) {
+      console.error(`[EMAIL SERVICE] Failed to send email via Resend API:`, err.message);
+    }
+  }
+
+  // 2. Try SMTP with strict 4s timeout
   if (mailTransporter) {
     try {
       await mailTransporter.sendMail({
@@ -110,18 +139,17 @@ export async function sendOtpEmail({ to, otp }: SendOtpOptions): Promise<{ sent:
       console.log(`[EMAIL SERVICE] Verification OTP successfully sent to ${to}`);
       return { sent: true };
     } catch (err: any) {
-      console.error(`[EMAIL SERVICE] Failed to send email via SMTP to ${to}:`, err.message);
-      // Fall through to console log so user flow is not broken if credentials are misconfigured
+      console.error(`[EMAIL SERVICE] Outbound SMTP failed/timed out to ${to}:`, err.message);
+      console.error(`[EMAIL SERVICE] Note: Cloud providers like Render free tier block outbound SMTP ports 25, 465, and 587. Falling back gracefully.`);
     }
   }
 
-  // Fallback for development / when SMTP credentials are not yet added
+  // Fallback for development / when SMTP credentials are not yet added or blocked
   console.log(`\n=============================================================`);
-  console.log(`[EMAIL SERVICE - DEV FALLBACK]`);
+  console.log(`[EMAIL SERVICE - EVALUATION FALLBACK]`);
   console.log(`Verification OTP for: ${to}`);
   console.log(`OTP Code: >>> ${otp} <<<`);
   console.log(`Valid for 10 minutes`);
-  console.log(`To send real emails, set SMTP_USER and SMTP_PASS in .env or Render`);
   console.log(`=============================================================\n`);
 
   return { sent: false };
