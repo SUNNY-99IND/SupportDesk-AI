@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, type FormEvent, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import * as authService from '../services/auth.service';
 import {
   Bot,
   UserPlus,
@@ -10,43 +9,57 @@ import {
   LogOut,
   ArrowRight,
   UserCheck,
-  Mail,
-  RefreshCw,
-  Edit2,
   CheckCircle2,
+  Mail,
+  Lock,
+  User,
+  Building2,
 } from 'lucide-react';
 
-export function RegisterPage() {
-  const [step, setStep] = useState<'FORM' | 'OTP'>('FORM');
+/**
+ * Validates that an email address follows standard RFC syntax with a proper domain and TLD.
+ */
+function validateEmail(val: string): { isValid: boolean; message?: string } {
+  const trimmed = val.trim().toLowerCase();
+  if (!trimmed) return { isValid: false, message: 'Email address is required' };
+  if (trimmed.includes(' ')) return { isValid: false, message: 'Email cannot contain spaces' };
+  if (trimmed.includes('..')) return { isValid: false, message: 'Email cannot contain consecutive dots' };
 
-  // Form Fields
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  if (!emailRegex.test(trimmed)) {
+    return { isValid: false, message: 'Please enter a valid email format (e.g. name@gmail.com)' };
+  }
+
+  const parts = trimmed.split('@');
+  if (parts.length !== 2 || !parts[1]) {
+    return { isValid: false, message: 'Email must contain a valid domain' };
+  }
+
+  const domain = parts[1];
+  const tld = domain.split('.').pop();
+  if (!tld || tld.length < 2 || !/^[a-z]+$/.test(tld)) {
+    return { isValid: false, message: 'Email domain must have a valid extension (.com, .org, etc.)' };
+  }
+
+  return { isValid: true };
+}
+
+export function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [organizationName, setOrganizationName] = useState('');
 
-  // 6-digit OTP fields
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
-
-  // State
-  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [emailTouched, setEmailTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   const { register, isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Handle Resend Cooldown countdown
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = setInterval(() => {
-      setResendCooldown((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [resendCooldown]);
+  const emailValidation = validateEmail(email);
+  const isEmailValid = email.length > 0 && emailValidation.isValid;
+  const showEmailError = emailTouched && email.length > 0 && !emailValidation.isValid;
 
   // If already authenticated, show session info and explicit options instead of silent redirect
   if (isAuthenticated && user) {
@@ -91,107 +104,19 @@ export function RegisterPage() {
     );
   }
 
-  // Step 1: Send OTP
-  const handleRequestOtp = async (e: FormEvent) => {
+  // Handle direct registration
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccessMessage(null);
 
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail || !trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
-      setError('Please enter a valid email address.');
+    const validation = validateEmail(email);
+    if (!validation.isValid) {
+      setError(validation.message || 'Please enter a valid email address.');
       return;
     }
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const result = await authService.sendRegistrationOtp(trimmedEmail);
-      if (result.data?.devOtp) {
-        setDevOtp(result.data.devOtp);
-      } else {
-        setDevOtp(null);
-      }
-      setStep('OTP');
-      setResendCooldown(60);
-      setSuccessMessage(result.message || `Verification code sent to ${trimmedEmail}`);
-      // Focus the first OTP input after switching views
-      setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
-    } catch (err: any) {
-      setError(err.message || 'Failed to send verification code. Please check your email.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Step 2: Resend OTP
-  const handleResendOtp = async () => {
-    if (resendCooldown > 0 || isSubmitting) return;
-    setError(null);
-    setSuccessMessage(null);
-    setIsSubmitting(true);
-    try {
-      const result = await authService.sendRegistrationOtp(email.trim().toLowerCase());
-      if (result.data?.devOtp) {
-        setDevOtp(result.data.devOtp);
-      } else {
-        setDevOtp(null);
-      }
-      setResendCooldown(60);
-      setSuccessMessage(result.message || 'A new verification code has been sent.');
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend verification code.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Handle OTP digit changes
-  const handleDigitChange = (index: number, value: string) => {
-    // Only accept numeric characters
-    const char = value.replace(/\D/g, '').slice(-1);
-    const newDigits = [...otpDigits];
-    newDigits[index] = char;
-    setOtpDigits(newDigits);
-
-    if (char && index < 5) {
-      otpInputsRef.current[index + 1]?.focus();
-    }
-  };
-
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
-      otpInputsRef.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (!pastedData) return;
-
-    const newDigits = [...otpDigits];
-    for (let i = 0; i < 6; i++) {
-      newDigits[i] = pastedData[i] || '';
-    }
-    setOtpDigits(newDigits);
-
-    const nextIndex = Math.min(pastedData.length, 5);
-    otpInputsRef.current[nextIndex]?.focus();
-  };
-
-  // Step 2 Submit: Verify OTP & Complete Registration
-  const handleVerifyAndRegister = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    const fullOtp = otpDigits.join('');
-    if (fullOtp.length !== 6) {
-      setError('Please enter all 6 digits of the verification code.');
       return;
     }
 
@@ -203,11 +128,10 @@ export function RegisterPage() {
         password,
         organizationName: organizationName.trim() || 'Default Workspace',
         role: 'CUSTOMER',
-        otp: fullOtp,
       });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Verification failed. Please check the code.');
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -236,12 +160,10 @@ export function RegisterPage() {
             <Bot className="size-6" />
           </div>
           <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            {step === 'FORM' ? 'Create SupportDesk Account' : 'Verify Your Email'}
+            Create SupportDesk Account
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {step === 'FORM'
-              ? 'Join your organization workspace with secure role-based access'
-              : 'Enter the 6-digit code sent to your email to complete registration'}
+            Join your organization workspace with secure role-based access
           </p>
         </div>
 
@@ -254,48 +176,84 @@ export function RegisterPage() {
             </div>
           )}
 
-          {successMessage && (
-            <div className="mb-5 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
-              <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-
-          {step === 'FORM' ? (
-            /* STEP 1: ACCOUNT DETAILS */
-            <form onSubmit={handleRequestOtp} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Full Name
-                </label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Full Name
+              </label>
+              <div className="relative mt-1.5">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <User className="size-4" />
+                </div>
                 <input
                   type="text"
                   required
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Jane Doe"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  placeholder="e.g. Jane Doe"
+                  className="w-full rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
+            </div>
 
-              <div>
+            {/* Email Address with Live Verification */}
+            <div>
+              <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Email address
                 </label>
+                {isEmailValid && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="size-3" />
+                    <span>Valid email format</span>
+                  </span>
+                )}
+              </div>
+              <div className="relative mt-1.5">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <Mail className="size-4" />
+                </div>
                 <input
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@gmail.com"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  onBlur={() => setEmailTouched(true)}
+                  placeholder="e.g. name@gmail.com"
+                  className={`w-full rounded-xl border pl-10 pr-9 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none dark:bg-slate-800 dark:text-white ${
+                    showEmailError
+                      ? 'border-rose-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 dark:border-rose-700'
+                      : isEmailValid
+                      ? 'border-emerald-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-emerald-700'
+                      : 'border-slate-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700'
+                  }`}
                 />
+                {isEmailValid && (
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-emerald-500">
+                    <CheckCircle2 className="size-4" />
+                  </div>
+                )}
               </div>
+              {showEmailError && (
+                <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+                  {emailValidation.message}
+                </p>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Password
-                </label>
+            {/* Password */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Password
+              </label>
+              <div className="relative mt-1.5">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <Lock className="size-4" />
+                </div>
                 <input
                   type="password"
                   required
@@ -303,138 +261,42 @@ export function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 6 characters"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
+            </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Organization Workspace (Optional)
-                </label>
+            {/* Organization Workspace */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Organization Workspace (Optional)
+              </label>
+              <div className="relative mt-1.5">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <Building2 className="size-4" />
+                </div>
                 <input
                   type="text"
                   value={organizationName}
                   onChange={(e) => setOrganizationName(e.target.value)}
                   placeholder="Acme Corp (or leave blank)"
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
+            </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
-              >
-                <span>{isSubmitting ? 'Sending verification code...' : 'Continue & Verify Email'}</span>
-                <Mail className="size-4" />
-              </button>
-            </form>
-          ) : (
-            /* STEP 2: ENTER OTP */
-            <form onSubmit={handleVerifyAndRegister} className="space-y-6">
-              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500 dark:text-slate-400">Verifying address:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep('FORM');
-                      setError(null);
-                      setSuccessMessage(null);
-                    }}
-                    className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-500 dark:text-brand-400"
-                  >
-                    <Edit2 className="size-3" />
-                    <span>Change</span>
-                  </button>
-                </div>
-                <div className="mt-1 font-semibold text-slate-900 dark:text-white truncate">
-                  {email}
-                </div>
-              </div>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
+            >
+              <UserPlus className="size-4" />
+              <span>{isSubmitting ? 'Creating account...' : 'Create Account'}</span>
+            </button>
+          </form>
 
-              {/* Evaluation Code Notice (if SMTP is not yet configured on server) */}
-              {devOtp && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/60 dark:text-amber-200">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-amber-900 dark:text-amber-300">
-                      Evaluation Code (SMTP not configured on server):
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const digits = devOtp.split('').slice(0, 6);
-                        setOtpDigits(digits);
-                        setError(null);
-                      }}
-                      className="shrink-0 rounded-lg bg-amber-200/80 px-2 py-0.5 text-[11px] font-bold text-amber-900 transition hover:bg-amber-300 dark:bg-amber-900/80 dark:text-amber-100"
-                    >
-                      Fill Code
-                    </button>
-                  </div>
-                  <div className="mt-1.5 font-mono text-base font-extrabold tracking-widest text-amber-950 dark:text-white">
-                    {devOtp}
-                  </div>
-                  <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
-                    To deliver real emails to your Gmail inbox, set <code>SMTP_USER</code> and <code>SMTP_PASS</code> in your Render environment variables.
-                  </p>
-                </div>
-              )}
-
-              {/* 6-Digit Boxes */}
-              <div>
-                <label className="block text-center text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                  Enter 6-Digit OTP Code
-                </label>
-                <div className="flex items-center justify-center gap-2 sm:gap-2.5">
-                  {otpDigits.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      ref={(el) => {
-                        otpInputsRef.current[idx] = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleDigitChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(idx, e)}
-                      onPaste={idx === 0 ? handlePaste : undefined}
-                      className="size-11 sm:size-12 rounded-xl border border-slate-200 text-center font-mono text-xl font-bold text-slate-900 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Resend Cooldown */}
-              <div className="text-center text-xs text-slate-500 dark:text-slate-400">
-                {resendCooldown > 0 ? (
-                  <span>Resend code in <strong className="text-slate-700 dark:text-slate-300">{resendCooldown}s</strong></span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={isSubmitting}
-                    className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-500 dark:text-brand-400"
-                  >
-                    <RefreshCw className="size-3" />
-                    <span>Didn&apos;t receive a code? Resend Code</span>
-                  </button>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting || otpDigits.join('').length !== 6}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
-              >
-                <span>{isSubmitting ? 'Verifying & Creating Account...' : 'Verify & Create Account'}</span>
-                <UserPlus className="size-4" />
-              </button>
-            </form>
-          )}
-
-          <div className="mt-6 border-t border-slate-100 pt-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
             Already have an account?{' '}
             <Link
               to="/login"

@@ -26,5 +26,5 @@ export interface RegisterPayload {
   fullName: string;
   organizationName?: string;
   role: Role;
-  otp: string;
+  otp?: string;
 }
