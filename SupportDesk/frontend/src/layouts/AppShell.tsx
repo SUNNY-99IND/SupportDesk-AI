@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 
 interface AppShellProps {
-  children: ReactNode;
+  children?: ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
@@ -18,10 +19,10 @@ export function AppShell({ children }: AppShellProps) {
         {isAuthenticated ? (
           <div className="flex flex-col gap-8 md:flex-row">
             <Sidebar />
-            <main className="min-w-0 flex-1">{children}</main>
+            <main className="min-w-0 flex-1">{children ?? <Outlet />}</main>
           </div>
         ) : (
-          <main className="min-w-0 flex-1">{children}</main>
+          <main className="min-w-0 flex-1">{children ?? <Outlet />}</main>
         )}
       </div>
 

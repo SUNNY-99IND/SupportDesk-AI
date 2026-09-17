@@ -1,18 +1,23 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bot, UserPlus, AlertCircle } from 'lucide-react';
+import { Bot, UserPlus, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [organizationName, setOrganizationName] = useState('Default Workspace');
+  const [organizationName, setOrganizationName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // If already authenticated, redirect straight to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -23,7 +28,7 @@ export function RegisterPage() {
         fullName,
         email,
         password,
-        organizationName,
+        organizationName: organizationName || 'Default Workspace',
         role: 'CUSTOMER',
       });
       navigate('/dashboard');
@@ -35,8 +40,22 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center py-8">
-      <div className="w-full max-w-md space-y-6">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 py-12 antialiased dark:bg-slate-950 sm:px-6 lg:px-8">
+      {/* Subtle background glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 size-[600px] rounded-full bg-brand-500/10 blur-3xl dark:bg-brand-500/5" />
+      </div>
+
+      <div className="relative w-full max-w-md space-y-6">
+        {/* Back to Home Link */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        >
+          <ArrowLeft className="size-3.5" />
+          <span>Back to Home</span>
+        </Link>
+
         <div className="text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white shadow-lg shadow-brand-500/25">
             <Bot className="size-6" />
@@ -49,9 +68,9 @@ export function RegisterPage() {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+            <div className="mb-5 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
               <AlertCircle className="size-4 shrink-0" />
               <span>{error}</span>
             </div>

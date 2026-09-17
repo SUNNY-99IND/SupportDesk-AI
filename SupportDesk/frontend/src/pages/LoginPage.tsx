@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bot, LogIn, AlertCircle } from 'lucide-react';
+import { Bot, LogIn, AlertCircle, ArrowLeft } from 'lucide-react';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -9,9 +9,14 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // If already authenticated, redirect straight to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const from = (location.state as any)?.from?.pathname || '/dashboard';
 
@@ -29,14 +34,23 @@ export function LoginPage() {
     }
   };
 
-  const handleFillCredentials = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('Password123!');
-  };
-
   return (
-    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center py-8">
-      <div className="w-full max-w-md space-y-6">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 py-12 antialiased dark:bg-slate-950 sm:px-6 lg:px-8">
+      {/* Subtle background glow */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 size-[600px] rounded-full bg-brand-500/10 blur-3xl dark:bg-brand-500/5" />
+      </div>
+
+      <div className="relative w-full max-w-md space-y-6">
+        {/* Back to Home Link */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        >
+          <ArrowLeft className="size-3.5" />
+          <span>Back to Home</span>
+        </Link>
+
         {/* Brand Banner */}
         <div className="text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white shadow-lg shadow-brand-500/25">
@@ -46,47 +60,14 @@ export function LoginPage() {
             Welcome to SupportDesk AI
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Sign in to manage tickets and access the AI Copilot
-          </p>
-        </div>
-
-        {/* Demo Credentials Helper Box - Fills form inputs only, does NOT auto-login */}
-        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-          <p className="text-center text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-            Demo Test Accounts (Password: Password123!)
-          </p>
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleFillCredentials('customer@supportdesk.ai')}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-medium text-slate-700 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-            >
-              Fill Customer
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFillCredentials('agent@supportdesk.ai')}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-medium text-slate-700 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-            >
-              Fill Agent
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFillCredentials('admin@supportdesk.ai')}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-center text-xs font-medium text-slate-700 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-            >
-              Fill Admin
-            </button>
-          </div>
-          <p className="mt-2 text-center text-[11px] text-slate-400">
-            Clicking fills email/password. You must click &quot;Sign In&quot; to verify credentials with backend.
+            Sign in to manage tickets and access your workspace
           </p>
         </div>
 
         {/* Form Card */}
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           {error && (
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+            <div className="mb-5 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
               <AlertCircle className="size-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -103,21 +84,23 @@ export function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Password
+                </label>
+              </div>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
             </div>
 
@@ -141,6 +124,11 @@ export function LoginPage() {
             </Link>
           </div>
         </div>
+
+        {/* Discreet footer note for evaluation */}
+        <p className="text-center text-[11px] text-slate-400">
+          Demo evaluation credentials: <code className="text-slate-500 dark:text-slate-300">admin@supportdesk.ai</code> / <code className="text-slate-500 dark:text-slate-300">Password123!</code>
+        </p>
       </div>
     </div>
   );
