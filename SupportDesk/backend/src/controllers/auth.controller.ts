@@ -1,5 +1,17 @@
 import type { Request, Response, NextFunction } from 'express';
-import { registerUser, loginUser, getProfile } from '../services/auth.service';
+import { registerUser, loginUser, getProfile, requestRegistrationOtp } from '../services/auth.service';
+
+export async function sendOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await requestRegistrationOtp(req.body.email);
+    res.status(200).json({
+      success: true,
+      message: 'Verification code sent to your email address.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 
 export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

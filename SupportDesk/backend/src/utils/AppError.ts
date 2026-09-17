@@ -36,4 +36,8 @@ export class AppError extends Error {
   static forbidden(message = 'You do not have permission to do that'): AppError {
     return new AppError(message, 403);
   }
+
+  static conflict(message = 'Resource already exists'): AppError {
+    return new AppError(message, 409);
+  }
 }

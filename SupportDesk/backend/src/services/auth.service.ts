@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { findUserByEmail, findUserById, createUser, type DbUser } from '../db/postgres';
 import type { RegisterInput, LoginInput } from '../validators/auth.validator';
+import { AppError } from '../utils/AppError';
+import { generateOtp, verifyOtp } from './otp.service';
+import { sendOtpEmail } from './email.service';
 
 export interface AuthResult {
   token: string;
@@ -27,12 +30,31 @@ function generateToken(user: DbUser): string {
   return jwt.sign(payload, env.JWT_SECRET as string, { expiresIn: (env.JWT_EXPIRES_IN || '1d') as any });
 }
 
+export async function requestRegistrationOtp(email: string): Promise<void> {
+  const existing = await findUserByEmail(email);
+  if (existing) {
+    throw AppError.conflict('A user with this email address already exists');
+  }
+
+  const { otp, cooldownRemainingSeconds } = generateOtp(email);
+  if (cooldownRemainingSeconds > 0) {
+    throw new AppError(`Please wait ${cooldownRemainingSeconds} seconds before requesting a new code.`, 429);
+  }
+
+  await sendOtpEmail({ to: email, otp });
+}
+
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
+  // 1. Verify OTP code before allowing account creation
+  const otpResult = verifyOtp(input.email, input.otp);
+  if (!otpResult.success) {
+    throw AppError.badRequest(otpResult.message || 'Invalid or expired verification code');
+  }
+
+  // 2. Check for duplicate registration
   const existing = await findUserByEmail(input.email);
   if (existing) {
-    const error = new Error('A user with this email address already exists');
-    (error as any).status = 409;
-    throw error;
+    throw AppError.conflict('A user with this email address already exists');
   }
 
   const saltRounds = 10;
