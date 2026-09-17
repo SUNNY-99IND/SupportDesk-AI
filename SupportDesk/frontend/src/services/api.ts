@@ -15,7 +15,7 @@ import type { ApiResponse, ApiSuccess } from '../types/api';
 const rawBase = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').trim();
 const BASE_URL = rawBase.replace(/\/+$/, '');
 
-const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_TIMEOUT_MS = 45000;
 
 /** An error we can show to the user, carrying the HTTP status when we have one. */
 export class ApiError extends Error {
