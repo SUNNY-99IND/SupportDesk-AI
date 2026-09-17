@@ -19,14 +19,16 @@ import { NotFoundPage } from './pages/NotFoundPage';
 export default function App() {
   return (
     <AuthProvider>
-      <AppShell>
-        <Routes>
-          {/* Public Landing Page */}
-          <Route path="/" element={<LandingPage />} />
+      <Routes>
+        {/* Public Standalone Landing Page (has its own header & footer) */}
+        <Route path="/" element={<LandingPage />} />
 
-          {/* Public Auth & Info Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+        {/* Public Standalone Auth Pages (clean, distraction-free centered view) */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Application Workspace Routes (wrapped in AppShell with Navbar & Sidebar) */}
+        <Route element={<AppShell />}>
           <Route path="/status" element={<SystemStatusPage />} />
 
           {/* Customer / General Authenticated Routes */}
@@ -123,8 +125,8 @@ export default function App() {
 
           {/* Catch-all Not Found */}
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </AppShell>
+        </Route>
+      </Routes>
     </AuthProvider>
   );
 }
