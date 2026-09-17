@@ -30,6 +30,7 @@ const envSchema = z.object({
 
   // Database URLs (optional; memory fallback activates if offline or empty)
   POSTGRES_URL: z.string().optional(),
+  DATABASE_URL: z.string().optional(),
   MONGO_URL: z.string().optional(),
 
   // LLM API configuration
