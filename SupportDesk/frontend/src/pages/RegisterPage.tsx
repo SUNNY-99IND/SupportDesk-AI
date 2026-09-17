@@ -30,6 +30,7 @@ export function RegisterPage() {
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   // State
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,10 +110,15 @@ export function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      await authService.sendRegistrationOtp(trimmedEmail);
+      const result = await authService.sendRegistrationOtp(trimmedEmail);
+      if (result.data?.devOtp) {
+        setDevOtp(result.data.devOtp);
+      } else {
+        setDevOtp(null);
+      }
       setStep('OTP');
       setResendCooldown(60);
-      setSuccessMessage(`Verification code sent to ${trimmedEmail}`);
+      setSuccessMessage(result.message || `Verification code sent to ${trimmedEmail}`);
       // Focus the first OTP input after switching views
       setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
     } catch (err: any) {
@@ -129,9 +135,14 @@ export function RegisterPage() {
     setSuccessMessage(null);
     setIsSubmitting(true);
     try {
-      await authService.sendRegistrationOtp(email.trim().toLowerCase());
+      const result = await authService.sendRegistrationOtp(email.trim().toLowerCase());
+      if (result.data?.devOtp) {
+        setDevOtp(result.data.devOtp);
+      } else {
+        setDevOtp(null);
+      }
       setResendCooldown(60);
-      setSuccessMessage('A new verification code has been sent to your email.');
+      setSuccessMessage(result.message || 'A new verification code has been sent.');
     } catch (err: any) {
       setError(err.message || 'Failed to resend verification code.');
     } finally {
@@ -341,6 +352,34 @@ export function RegisterPage() {
                   {email}
                 </div>
               </div>
+
+              {/* Evaluation Code Notice (if SMTP is not yet configured on server) */}
+              {devOtp && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/60 dark:text-amber-200">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-amber-900 dark:text-amber-300">
+                      Evaluation Code (SMTP not configured on server):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const digits = devOtp.split('').slice(0, 6);
+                        setOtpDigits(digits);
+                        setError(null);
+                      }}
+                      className="shrink-0 rounded-lg bg-amber-200/80 px-2 py-0.5 text-[11px] font-bold text-amber-900 transition hover:bg-amber-300 dark:bg-amber-900/80 dark:text-amber-100"
+                    >
+                      Fill Code
+                    </button>
+                  </div>
+                  <div className="mt-1.5 font-mono text-base font-extrabold tracking-widest text-amber-950 dark:text-white">
+                    {devOtp}
+                  </div>
+                  <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
+                    To deliver real emails to your Gmail inbox, set <code>SMTP_USER</code> and <code>SMTP_PASS</code> in your Render environment variables.
+                  </p>
+                </div>
+              )}
 
               {/* 6-Digit Boxes */}
               <div>

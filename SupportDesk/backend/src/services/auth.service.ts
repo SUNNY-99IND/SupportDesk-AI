@@ -30,7 +30,7 @@ function generateToken(user: DbUser): string {
   return jwt.sign(payload, env.JWT_SECRET as string, { expiresIn: (env.JWT_EXPIRES_IN || '1d') as any });
 }
 
-export async function requestRegistrationOtp(email: string): Promise<void> {
+export async function requestRegistrationOtp(email: string): Promise<{ otpSentViaSmtp: boolean; devOtp?: string }> {
   const existing = await findUserByEmail(email);
   if (existing) {
     throw AppError.conflict('A user with this email address already exists');
@@ -41,7 +41,11 @@ export async function requestRegistrationOtp(email: string): Promise<void> {
     throw new AppError(`Please wait ${cooldownRemainingSeconds} seconds before requesting a new code.`, 429);
   }
 
-  await sendOtpEmail({ to: email, otp });
+  const { sent } = await sendOtpEmail({ to: email, otp });
+  return {
+    otpSentViaSmtp: sent,
+    devOtp: sent ? undefined : otp,
+  };
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {

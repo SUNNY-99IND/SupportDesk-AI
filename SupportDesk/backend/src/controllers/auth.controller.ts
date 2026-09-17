@@ -3,10 +3,13 @@ import { registerUser, loginUser, getProfile, requestRegistrationOtp } from '../
 
 export async function sendOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    await requestRegistrationOtp(req.body.email);
+    const result = await requestRegistrationOtp(req.body.email);
     res.status(200).json({
       success: true,
-      message: 'Verification code sent to your email address.',
+      message: result.otpSentViaSmtp
+        ? 'Verification code sent to your email address.'
+        : 'Verification code generated (Evaluation mode active).',
+      data: result,
     });
   } catch (error) {
     next(error);
