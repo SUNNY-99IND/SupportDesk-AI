@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bot, LogIn, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Bot, LogIn, AlertCircle, ArrowLeft, LogOut, ArrowRight, UserCheck } from 'lucide-react';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -9,13 +9,51 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // If already authenticated, redirect straight to dashboard
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+  // If already authenticated, show session info and explicit options instead of silent redirect
+  if (isAuthenticated && user) {
+    return (
+      <div className="relative flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 py-12 antialiased dark:bg-slate-950 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          >
+            <ArrowLeft className="size-3.5" />
+            <span>Back to Home</span>
+          </Link>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400">
+              <UserCheck className="size-6" />
+            </div>
+            <h2 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">You Are Already Signed In</h2>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Active session as <strong className="text-slate-700 dark:text-slate-200">{user.fullName || user.email}</strong> ({user.roles?.join(', ')})
+            </p>
+            <div className="mt-6 flex flex-col gap-2.5">
+              <Link
+                to="/dashboard"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
+              >
+                <span>Continue to Dashboard</span>
+                <ArrowRight className="size-4" />
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              >
+                <LogOut className="size-4" />
+                <span>Sign Out to Log In as Another User</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const from = (location.state as any)?.from?.pathname || '/dashboard';
