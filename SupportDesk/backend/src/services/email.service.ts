@@ -36,11 +36,17 @@ function getTransporter(): Transporter | null {
   return null;
 }
 
+export function isSmtpConfigured(): boolean {
+  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
+  const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD;
+  return Boolean(user && pass);
+}
+
 /**
  * Send an OTP verification email to the user.
  * Falls back to logging to console if SMTP credentials are not configured.
  */
-export async function sendOtpEmail({ to, otp }: SendOtpOptions): Promise<void> {
+export async function sendOtpEmail({ to, otp }: SendOtpOptions): Promise<{ sent: boolean }> {
   const mailTransporter = getTransporter();
   const senderEmail = process.env.SMTP_FROM || process.env.SMTP_USER || process.env.GMAIL_USER || 'no-reply@supportdesk.ai';
 
@@ -102,7 +108,7 @@ export async function sendOtpEmail({ to, otp }: SendOtpOptions): Promise<void> {
         html: htmlContent,
       });
       console.log(`[EMAIL SERVICE] Verification OTP successfully sent to ${to}`);
-      return;
+      return { sent: true };
     } catch (err: any) {
       console.error(`[EMAIL SERVICE] Failed to send email via SMTP to ${to}:`, err.message);
       // Fall through to console log so user flow is not broken if credentials are misconfigured
@@ -117,4 +123,6 @@ export async function sendOtpEmail({ to, otp }: SendOtpOptions): Promise<void> {
   console.log(`Valid for 10 minutes`);
   console.log(`To send real emails, set SMTP_USER and SMTP_PASS in .env or Render`);
   console.log(`=============================================================\n`);
+
+  return { sent: false };
 }

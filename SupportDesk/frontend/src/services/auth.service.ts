@@ -9,12 +9,22 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
   return res.data!;
 }
 
-export async function sendRegistrationOtp(email: string): Promise<string> {
-  const res = await apiRequest<{ message: string }>('/api/auth/send-otp', {
+export interface SendOtpResult {
+  otpSentViaSmtp: boolean;
+  devOtp?: string;
+}
+
+export async function sendRegistrationOtp(
+  email: string
+): Promise<{ message: string; data?: SendOtpResult }> {
+  const res = await apiRequest<SendOtpResult>('/api/auth/send-otp', {
     method: 'POST',
     body: JSON.stringify({ email }),
   });
-  return res.message || 'Verification code sent';
+  return {
+    message: res.message || 'Verification code sent',
+    data: res.data,
+  };
 }
 
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
