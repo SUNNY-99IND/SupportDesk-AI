@@ -2,14 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Bot, UserPlus, AlertCircle } from 'lucide-react';
-import type { Role } from '../types/auth';
 
 export function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [organizationName, setOrganizationName] = useState('Acme Technologies Inc.');
-  const [role, setRole] = useState<Role>('CUSTOMER');
+  const [organizationName, setOrganizationName] = useState('Default Workspace');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,7 +24,7 @@ export function RegisterPage() {
         email,
         password,
         organizationName,
-        role,
+        role: 'CUSTOMER',
       });
       navigate('/dashboard');
     } catch (err: any) {
@@ -105,37 +103,15 @@ export function RegisterPage() {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Organization Workspace
+                Organization Workspace (Optional)
               </label>
               <input
                 type="text"
                 value={organizationName}
                 onChange={(e) => setOrganizationName(e.target.value)}
-                placeholder="Acme Technologies Inc."
+                placeholder="Default Workspace"
                 className="mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Initial Account Role
-              </label>
-              <div className="mt-1.5 grid grid-cols-3 gap-2">
-                {(['CUSTOMER', 'AGENT', 'ADMIN'] as Role[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`rounded-xl border p-2 text-xs font-medium transition ${
-                      role === r
-                        ? 'border-brand-600 bg-brand-50 text-brand-700 dark:border-brand-500 dark:bg-brand-950/50 dark:text-brand-300'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400'
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <button

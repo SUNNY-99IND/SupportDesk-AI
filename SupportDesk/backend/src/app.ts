@@ -72,6 +72,14 @@ export function createApp(): Application {
     });
   });
 
+  // Normalize duplicate slashes in incoming request URLs (e.g. //api/auth -> /api/auth)
+  app.use((req, _res, next) => {
+    if (req.url && req.url.includes('//')) {
+      req.url = req.url.replace(/\/{2,}/g, '/');
+    }
+    next();
+  });
+
   // All application routes live under /api.
   app.use('/api', apiRoutes);
 

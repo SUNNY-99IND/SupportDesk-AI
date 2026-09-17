@@ -43,7 +43,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     passwordHash,
     fullName: input.fullName,
     organizationName: input.organizationName || 'Default Workspace',
-    role: input.role,
+    role: 'CUSTOMER', // Strict security: public registrations are always CUSTOMER
   });
 
   const token = generateToken(newUser);

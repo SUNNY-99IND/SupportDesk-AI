@@ -2,10 +2,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { Bot, Sun, Moon, LogOut, User as UserIcon, Shield, Headphones } from 'lucide-react';
-import type { Role } from '../types/auth';
 
 export function Navbar() {
-  const { user, isAuthenticated, logout, switchDemoUser } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -26,29 +25,16 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Center: Demo Persona Switcher (Super helpful for grading & user evaluation) */}
-        {isAuthenticated && (
-          <div className="hidden items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/80 p-1 md:flex dark:border-slate-800 dark:bg-slate-800/50">
-            <span className="px-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
-              Switch Persona:
+        {/* Center: Authenticated User Role Badge (Read-Only) */}
+        {isAuthenticated && user && (
+          <div className="hidden items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-1.5 md:flex dark:border-slate-800 dark:bg-slate-800/40">
+            <span className="text-xs text-slate-500">Workspace:</span>
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              {user.organization || 'SupportDesk'}
             </span>
-            {(['CUSTOMER', 'AGENT', 'ADMIN'] as Role[]).map((r) => {
-              const isActive = user?.roles.includes(r);
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => switchDemoUser(r)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                    isActive
-                      ? 'bg-brand-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-700/60'
-                  }`}
-                >
-                  {r === 'CUSTOMER' ? '👤 Customer' : r === 'AGENT' ? '🎧 Agent' : '🛡️ Admin'}
-                </button>
-              );
-            })}
+            <span className="rounded-md bg-brand-100 px-2 py-0.5 text-[11px] font-bold uppercase text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+              {user.roles?.[0] || 'CUSTOMER'}
+            </span>
           </div>
         )}
 

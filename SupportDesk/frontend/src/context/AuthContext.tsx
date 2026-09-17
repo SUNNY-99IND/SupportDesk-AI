@@ -16,7 +16,6 @@ interface AuthContextType {
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => void;
-  switchDemoUser: (role: Role) => Promise<void>;
   hasRole: (role: Role) => boolean;
   hasAnyRole: (roles: Role[]) => boolean;
 }
@@ -70,14 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const switchDemoUser = async (role: Role) => {
-    let email = 'customer@supportdesk.ai';
-    if (role === 'AGENT') email = 'agent@supportdesk.ai';
-    if (role === 'ADMIN') email = 'admin@supportdesk.ai';
-
-    await login({ email, password: 'Password123!' });
-  };
-
   const hasRole = (role: Role): boolean => {
     return Boolean(user?.roles?.includes(role));
   };
@@ -96,7 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
-        switchDemoUser,
         hasRole,
         hasAnyRole,
       }}
