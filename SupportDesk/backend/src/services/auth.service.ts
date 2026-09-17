@@ -49,13 +49,7 @@ export async function requestRegistrationOtp(email: string): Promise<{ otpSentVi
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
-  // 1. Verify OTP code before allowing account creation
-  const otpResult = verifyOtp(input.email, input.otp);
-  if (!otpResult.success) {
-    throw AppError.badRequest(otpResult.message || 'Invalid or expired verification code');
-  }
-
-  // 2. Check for duplicate registration
+  // 1. Check for duplicate registration
   const existing = await findUserByEmail(input.email);
   if (existing) {
     throw AppError.conflict('A user with this email address already exists');

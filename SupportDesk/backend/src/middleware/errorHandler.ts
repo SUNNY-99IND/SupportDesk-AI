@@ -28,6 +28,12 @@ export function errorHandler(
     return;
   }
 
+  const errorStatus = (err as any)?.statusCode || (err as any)?.status;
+  if (typeof errorStatus === 'number' && errorStatus >= 400 && errorStatus < 500) {
+    sendFailure(res, (err as any).message || 'Request failed', errorStatus, (err as any).details);
+    return;
+  }
+
   if (err instanceof ZodError) {
     const issues = err.issues.map((issue) => ({
       field: issue.path.join('.'),
