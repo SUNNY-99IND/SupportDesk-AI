@@ -18,16 +18,16 @@ let pool: Pool | null = null;
 let isPostgresAvailable = false;
 
 export async function initPostgres(): Promise<boolean> {
-  const connectionString = env.POSTGRES_URL;
+  const connectionString = (env.POSTGRES_URL || env.DATABASE_URL || process.env.DATABASE_URL || process.env.POSTGRESQL_URL || '').trim();
   if (!connectionString) {
-    console.info('ℹ️  POSTGRES_URL not provided. Using in-memory relational store.');
+    console.info('ℹ️  POSTGRES_URL / DATABASE_URL not provided. Using in-memory relational store.');
     return false;
   }
 
   try {
     pool = new Pool({
       connectionString,
-      connectionTimeoutMillis: 3000,
+      connectionTimeoutMillis: 5000,
     });
 
     // Test connection
