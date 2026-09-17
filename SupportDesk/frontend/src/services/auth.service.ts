@@ -9,6 +9,14 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
   return res.data!;
 }
 
+export async function sendRegistrationOtp(email: string): Promise<string> {
+  const res = await apiRequest<{ message: string }>('/api/auth/send-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+  return res.message || 'Verification code sent';
+}
+
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
   const res = await apiRequest<AuthResponse>('/api/auth/register', {
     method: 'POST',
