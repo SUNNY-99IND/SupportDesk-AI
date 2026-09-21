@@ -7,6 +7,7 @@ import {
 } from 'react';
 import type { User, Role, LoginPayload, RegisterPayload } from '../types/auth';
 import * as authService from '../services/auth.service';
+import { registerBusinessWorkspace } from '../services/workspace.service';
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +16,13 @@ interface AuthContextType {
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  registerBusiness: (payload: {
+    fullName: string;
+    email: string;
+    password: string;
+    businessName: string;
+    websiteUrl: string;
+  }) => Promise<void>;
   logout: () => void;
   hasRole: (role: Role) => boolean;
   hasAnyRole: (roles: Role[]) => boolean;
@@ -63,6 +71,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   };
 
+  const registerBusiness = async (payload: {
+    fullName: string;
+    email: string;
+    password: string;
+    businessName: string;
+    websiteUrl: string;
+  }) => {
+    const data = await registerBusinessWorkspace(payload);
+    localStorage.setItem('token', data.token);
+    setToken(data.token);
+    setUser(data.user);
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setToken(null);
@@ -86,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         register,
+        registerBusiness,
         logout,
         hasRole,
         hasAnyRole,

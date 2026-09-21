@@ -46,8 +46,8 @@ export async function listTickets(
     }));
   }
 
-  // Memory fallback
-  let tickets = memoryStore.tickets.slice();
+  // Memory fallback - strictly isolated by workspace organizationId
+  let tickets = memoryStore.tickets.filter((t) => t.organizationId === user.organizationId);
   if (isCustomer) {
     tickets = tickets.filter((t) => t.customerId === user.id);
   }
@@ -100,8 +100,15 @@ export async function getTicketById(id: string, user: AuthenticatedUser): Promis
     throw error;
   }
 
+  // Multi-tenant check: ticket must belong to authenticated user's workspace
+  if (ticket.organizationId !== user.organizationId) {
+    const error = new Error('Access denied: ticket does not belong to your workspace');
+    (error as any).status = 403;
+    throw error;
+  }
+
   // Customer authorization check
-  const isCustomerOnly = user.roles.includes('CUSTOMER') && !user.roles.includes('AGENT') && !user.roles.includes('ADMIN');
+  const isCustomerOnly = user.roles.includes('CUSTOMER') && !user.roles.includes('AGENT') && !user.roles.includes('ADMIN') && !user.roles.includes('OWNER');
   if (isCustomerOnly && ticket.customerId !== user.id) {
     const error = new Error('Access denied to this ticket');
     (error as any).status = 403;
@@ -265,7 +272,7 @@ export async function updateTicket(
 
 export async function deleteTicket(id: string, user: AuthenticatedUser): Promise<void> {
   const existing = await getTicketById(id, user);
-  const isAdmin = user.roles.includes('ADMIN');
+  const isAdmin = user.roles.includes('ADMIN') || user.roles.includes('OWNER');
   if (!isAdmin && existing.customerId !== user.id) {
     const error = new Error('Permission denied: only admins or the ticket owner can delete this ticket');
     (error as any).status = 403;
@@ -310,7 +317,10 @@ export async function addMessage(
 ): Promise<DbMessage> {
   await getTicketById(ticketId, user);
 
-  const senderType = user.roles.includes('AGENT') || user.roles.includes('ADMIN') ? 'AGENT' : 'CUSTOMER';
+  const senderType =
+    user.roles.includes('AGENT') || user.roles.includes('ADMIN') || user.roles.includes('OWNER')
+      ? 'AGENT'
+      : 'CUSTOMER';
 
   if (isMongoConnected()) {
     const doc = await (Message as any).create({
@@ -353,3 +363,91 @@ export async function addMessage(
 
   return newMsg;
 }
+
+export async function createTicketFromWidget(input: {
+  organizationId: string;
+  customerName: string;
+  customerEmail: string;
+  title: string;
+  description: string;
+  category?: string;
+}): Promise<DbTicket> {
+  const classification = await classifyTicketContent(input.title, input.description);
+  const initialPriority = (classification.priority.toUpperCase() as any) || 'MEDIUM';
+  const customerId = `visitor-${Buffer.from(input.customerEmail.toLowerCase()).toString('base64url').slice(0, 16)}`;
+
+  if (isMongoConnected()) {
+    const ticketDoc = await (Ticket as any).create({
+      organizationId: input.organizationId,
+      customerId,
+      customerName: input.customerName,
+      customerEmail: input.customerEmail,
+      title: input.title,
+      description: input.description,
+      category: input.category || 'General',
+      priority: initialPriority,
+      status: 'OPEN',
+      aiClassification: classification,
+    });
+
+    await (Message as any).create({
+      ticketId: ticketDoc._id.toString(),
+      senderId: customerId,
+      senderName: input.customerName,
+      senderType: 'CUSTOMER',
+      body: input.description,
+    });
+
+    return {
+      _id: ticketDoc._id.toString(),
+      organizationId: ticketDoc.organizationId,
+      customerId: ticketDoc.customerId,
+      customerName: ticketDoc.customerName,
+      customerEmail: ticketDoc.customerEmail,
+      assignedAgentId: ticketDoc.assignedAgentId,
+      assignedAgentName: ticketDoc.assignedAgentName,
+      title: ticketDoc.title,
+      description: ticketDoc.description,
+      category: ticketDoc.category,
+      priority: ticketDoc.priority,
+      status: ticketDoc.status,
+      aiClassification: ticketDoc.aiClassification,
+      createdAt: ticketDoc.createdAt.toISOString(),
+      updatedAt: ticketDoc.updatedAt.toISOString(),
+    };
+  }
+
+  const newTicketId = `tkt-wdg-${Date.now()}`;
+  const newTicket: DbTicket = {
+    _id: newTicketId,
+    organizationId: input.organizationId,
+    customerId,
+    customerName: input.customerName,
+    customerEmail: input.customerEmail,
+    assignedAgentId: null,
+    assignedAgentName: null,
+    title: input.title,
+    description: input.description,
+    category: input.category || 'General',
+    priority: initialPriority,
+    status: 'OPEN',
+    aiClassification: classification,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  memoryStore.tickets.unshift(newTicket);
+
+  memoryStore.messages.push({
+    _id: `msg-${Date.now()}`,
+    ticketId: newTicketId,
+    senderId: customerId,
+    senderName: input.customerName,
+    senderType: 'CUSTOMER',
+    body: input.description,
+    createdAt: new Date().toISOString(),
+  });
+
+  return newTicket;
+}
+

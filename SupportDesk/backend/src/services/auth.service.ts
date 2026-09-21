@@ -4,8 +4,9 @@ import { env } from '../config/env';
 import { findUserByEmail, findUserById, createUser, type DbUser } from '../db/postgres';
 import type { RegisterInput, LoginInput } from '../validators/auth.validator';
 import { AppError } from '../utils/AppError';
-import { generateOtp, verifyOtp } from './otp.service';
+import { generateOtp } from './otp.service';
 import { sendOtpEmail } from './email.service';
+import { registerBusinessWorkspace } from './workspace.service';
 
 export interface AuthResult {
   token: string;
@@ -14,7 +15,8 @@ export interface AuthResult {
     email: string;
     fullName: string;
     organization: string;
-    roles: ('CUSTOMER' | 'AGENT' | 'ADMIN')[];
+    organizationId: string;
+    roles: ('CUSTOMER' | 'AGENT' | 'ADMIN' | 'OWNER')[];
   };
 }
 
@@ -24,7 +26,7 @@ function generateToken(user: DbUser): string {
     email: user.email,
     fullName: user.full_name,
     organizationId: user.organization_id,
-    organizationName: user.organization || 'Acme Technologies Inc.',
+    organizationName: user.organization || 'SupportDesk Workspace',
     roles: user.roles,
   };
   return jwt.sign(payload, env.JWT_SECRET as string, { expiresIn: (env.JWT_EXPIRES_IN || '1d') as any });
@@ -49,6 +51,22 @@ export async function requestRegistrationOtp(email: string): Promise<{ otpSentVi
 }
 
 export async function registerUser(input: RegisterInput): Promise<AuthResult> {
+  // If websiteUrl is provided, run the full business onboarding flow
+  if (input.websiteUrl) {
+    const businessResult = await registerBusinessWorkspace({
+      fullName: input.fullName,
+      email: input.email,
+      password: input.password,
+      businessName: input.organizationName || 'My Business Workspace',
+      websiteUrl: input.websiteUrl,
+    });
+
+    return {
+      token: businessResult.token,
+      user: businessResult.user,
+    };
+  }
+
   // 1. Check for duplicate registration
   const existing = await findUserByEmail(input.email);
   if (existing) {
@@ -63,7 +81,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
     passwordHash,
     fullName: input.fullName,
     organizationName: input.organizationName || 'Default Workspace',
-    role: 'CUSTOMER', // Strict security: public registrations are always CUSTOMER
+    role: input.role || 'CUSTOMER',
   });
 
   const token = generateToken(newUser);
@@ -75,6 +93,7 @@ export async function registerUser(input: RegisterInput): Promise<AuthResult> {
       email: newUser.email,
       fullName: newUser.full_name,
       organization: newUser.organization || 'Default Workspace',
+      organizationId: newUser.organization_id,
       roles: newUser.roles,
     },
   };
@@ -109,7 +128,8 @@ export async function loginUser(input: LoginInput): Promise<AuthResult> {
       id: user.id,
       email: user.email,
       fullName: user.full_name,
-      organization: user.organization || 'Acme Technologies Inc.',
+      organization: user.organization || 'SupportDesk Workspace',
+      organizationId: user.organization_id,
       roles: user.roles,
     },
   };
@@ -127,7 +147,7 @@ export async function getProfile(userId: string) {
     id: user.id,
     email: user.email,
     fullName: user.full_name,
-    organization: user.organization || 'Acme Technologies Inc.',
+    organization: user.organization || 'SupportDesk Workspace',
     organizationId: user.organization_id,
     roles: user.roles,
     createdAt: user.created_at,
