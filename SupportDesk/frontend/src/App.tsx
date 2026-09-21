@@ -13,6 +13,9 @@ import { TicketDetailPage } from './pages/TicketDetailPage';
 import { ChatPage } from './pages/ChatPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
+import { KnowledgePage } from './pages/KnowledgePage';
+import { WidgetPreviewPage } from './pages/WidgetPreviewPage';
+import { AgentsPage } from './pages/AgentsPage';
 import { SystemStatusPage } from './pages/SystemStatusPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -93,6 +96,30 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/knowledge"
+            element={
+              <ProtectedRoute>
+                <KnowledgePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/widget-preview"
+            element={
+              <ProtectedRoute>
+                <WidgetPreviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/agents"
+            element={
+              <ProtectedRoute allowedRoles={['OWNER', 'ADMIN']}>
+                <AgentsPage />
               </ProtectedRoute>
             }
           />

@@ -3,17 +3,22 @@
  *
  * Provides instant, zero-friction execution when local PostgreSQL/MongoDB
  * daemons are not running or during rapid testing. Implements the same
- * schema relationships (Organizations -> Users -> Roles, Tickets, Messages)
+ * schema relationships (Organizations -> Users -> Roles, Tickets, Messages, KnowledgeBase)
  * with sample accounts ready to test:
  *   - customer@supportdesk.ai / Password123! (Role: CUSTOMER)
  *   - agent@supportdesk.ai / Password123! (Role: AGENT)
- *   - admin@supportdesk.ai / Password123! (Role: ADMIN)
+ *   - admin@supportdesk.ai / Password123! (Role: ADMIN / OWNER)
  */
 import bcrypt from 'bcryptjs';
 
 export interface DbOrganization {
   id: string;
   name: string;
+  website_url?: string;
+  owner_id?: string;
+  verification_status: 'PENDING' | 'VERIFIED';
+  verification_token?: string;
+  widget_key?: string;
   created_at: string;
 }
 
@@ -25,7 +30,7 @@ export interface DbUser {
   full_name: string;
   is_active: boolean;
   created_at: string;
-  roles: ('CUSTOMER' | 'AGENT' | 'ADMIN')[];
+  roles: ('CUSTOMER' | 'AGENT' | 'ADMIN' | 'OWNER')[];
   organization?: string;
 }
 
@@ -63,11 +68,23 @@ export interface DbMessage {
   createdAt: string;
 }
 
+export interface DbKnowledgeDoc {
+  _id: string;
+  organizationId: string;
+  title: string;
+  category: string;
+  content: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 class MemoryStore {
   organizations: DbOrganization[] = [];
   users: DbUser[] = [];
   tickets: DbTicket[] = [];
   messages: DbMessage[] = [];
+  knowledgeDocs: DbKnowledgeDoc[] = [];
   private seeded = false;
 
   async initSeeds(): Promise<void> {
@@ -75,9 +92,16 @@ class MemoryStore {
     this.seeded = true;
 
     const orgId = 'org-1111-2222-3333-4444';
+    const adminUserId = 'usr-admin-3333';
+
     this.organizations.push({
       id: orgId,
       name: 'Acme Technologies Inc.',
+      website_url: 'https://acme-tech.com',
+      owner_id: adminUserId,
+      verification_status: 'VERIFIED',
+      verification_token: 'supportdesk-verify-demo-acme-token',
+      widget_key: 'wdg_acme_demo_1111',
       created_at: new Date().toISOString(),
     });
 
@@ -108,14 +132,14 @@ class MemoryStore {
     };
 
     const adminUser: DbUser = {
-      id: 'usr-admin-3333',
+      id: adminUserId,
       organization_id: orgId,
       email: 'admin@supportdesk.ai',
       password_hash: passwordHash,
       full_name: 'David Administrator',
       is_active: true,
       created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
-      roles: ['ADMIN'],
+      roles: ['OWNER', 'ADMIN'],
       organization: 'Acme Technologies Inc.',
     };
 
@@ -227,6 +251,50 @@ class MemoryStore {
         senderType: 'AGENT',
         body: 'Hi Sarah, I am reviewing invoice #INV-9821 right now. I will confirm the reversal with our payment gateway within the hour.',
         createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+      }
+    );
+
+    // Initial Knowledge Base Documents for Workspace
+    this.knowledgeDocs.push(
+      {
+        _id: 'kb-0001',
+        organizationId: orgId,
+        title: 'Return and Refund Policy',
+        category: 'Refund Policy',
+        content: 'Customers are eligible for a 100% full refund within 30 days of initial purchase or invoice issuance. Duplicate billing errors are reversed immediately upon verification. To initiate a refund, contact billing support with your transaction reference number.',
+        tags: ['refund', 'billing', 'charge', 'return', 'money'],
+        createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+      },
+      {
+        _id: 'kb-0002',
+        organizationId: orgId,
+        title: 'Standard Shipping and Delivery Windows',
+        category: 'Shipping Policy',
+        content: 'Standard domestic delivery arrives within 3-5 business days. Express next-day shipping is available for orders confirmed before 2:00 PM EST. Real-time courier tracking numbers are dispatched via email immediately after package dispatch.',
+        tags: ['shipping', 'delivery', 'carrier', 'tracking', 'order'],
+        createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+      },
+      {
+        _id: 'kb-0003',
+        organizationId: orgId,
+        title: 'SAML 2.0 SSO and Okta Configuration Guide',
+        category: 'Account',
+        content: 'Enterprise workspaces can enable Single Sign-On via SAML 2.0 with Okta, Azure AD, or Google Workspace. The ACS URL is https://auth.supportdesk.ai/saml/callback and the Entity ID is urn:supportdesk:sp. Identity provider metadata can be uploaded under Settings > Security.',
+        tags: ['sso', 'okta', 'saml', 'login', 'authentication'],
+        createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+      },
+      {
+        _id: 'kb-0004',
+        organizationId: orgId,
+        title: 'API Rate Limits and Webhook Best Practices',
+        category: 'Technical',
+        content: 'Standard API limits are set to 60 requests per minute per token. When handling high volume, implement exponential backoff upon receiving HTTP 429. Webhooks retry with exponential backoff up to 5 attempts over 24 hours.',
+        tags: ['api', 'rate limit', '429', 'developer', 'webhook'],
+        createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000 * 4).toISOString(),
       }
     );
   }

@@ -39,7 +39,8 @@ export const registerSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   fullName: z.string().trim().min(2, 'Full name must be at least 2 characters'),
   organizationName: z.string().trim().optional(),
-  role: z.enum(['CUSTOMER']).default('CUSTOMER'),
+  websiteUrl: z.string().trim().optional(),
+  role: z.enum(['CUSTOMER', 'AGENT', 'ADMIN', 'OWNER']).default('CUSTOMER'),
   otp: z.string().trim().optional(), // Kept optional for backwards compatibility
 });
 

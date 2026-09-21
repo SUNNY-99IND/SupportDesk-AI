@@ -1,16 +1,29 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Ticket, MessageSquare, Users, User, ShieldCheck } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Ticket,
+  MessageSquare,
+  BookOpen,
+  Bot,
+  Users,
+  User,
+  ShieldCheck,
+} from 'lucide-react';
 
 export function Sidebar() {
   const { user } = useAuth();
+  const isOwnerOrAdmin = user?.roles.includes('OWNER') || user?.roles.includes('ADMIN');
   const isAdmin = user?.roles.includes('ADMIN');
 
   const navItems = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/tickets', label: 'Tickets', icon: Ticket },
     { to: '/chat', label: 'AI Assistant', icon: MessageSquare },
-    ...(isAdmin ? [{ to: '/admin', label: 'User Admin', icon: Users }] : []),
+    { to: '/knowledge', label: 'Knowledge Base', icon: BookOpen },
+    { to: '/widget-preview', label: 'Website Widget', icon: Bot },
+    ...(isOwnerOrAdmin ? [{ to: '/agents', label: 'Support Agents', icon: Users }] : []),
+    ...(isAdmin ? [{ to: '/admin', label: 'System Admin', icon: ShieldCheck }] : []),
     { to: '/profile', label: 'Profile', icon: User },
   ];
 

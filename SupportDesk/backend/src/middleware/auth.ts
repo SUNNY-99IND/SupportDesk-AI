@@ -8,7 +8,7 @@ export interface AuthenticatedUser {
   fullName: string;
   organizationId: string;
   organizationName?: string;
-  roles: ('CUSTOMER' | 'AGENT' | 'ADMIN')[];
+  roles: ('CUSTOMER' | 'AGENT' | 'ADMIN' | 'OWNER')[];
 }
 
 declare global {

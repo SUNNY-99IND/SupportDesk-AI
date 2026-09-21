@@ -104,20 +104,19 @@ export function LandingPage() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3.5 py-1 text-xs font-semibold text-brand-700 dark:border-brand-900/60 dark:bg-brand-950/60 dark:text-brand-300">
               <Sparkles className="size-3.5" />
-              <span>AI-Powered Customer Support Platform</span>
+              <span>Website-Connected Customer Support Workspace</span>
             </div>
 
             <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl dark:text-white">
-              SupportDesk <span className="bg-gradient-to-r from-brand-600 to-indigo-500 bg-clip-text text-transparent">AI</span>
+              Connect Your Website to <span className="bg-gradient-to-r from-brand-600 to-indigo-500 bg-clip-text text-transparent">SupportDesk AI</span>
             </h1>
 
             <p className="mt-4 text-lg font-medium text-slate-700 sm:text-xl dark:text-slate-200">
-              AI-powered customer support platform for modern businesses.
+              Transform your business website with a dedicated, AI-powered customer support workspace.
             </p>
 
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-500 sm:text-base dark:text-slate-400">
-              SupportDesk AI brings customer support tickets, real-time conversations, AI-assisted responses,
-              knowledge-base support, and actionable analytics together into one unified, secure workspace.
+              Connect and verify your website, then manage customer conversations, tickets, agents, knowledge base, and AI co-pilots in a single multi-tenant workspace with an embedded website support widget.
             </p>
 
             {/* If user is already authenticated, show informative banner and explicit options */}
@@ -132,7 +131,7 @@ export function LandingPage() {
                     to="/dashboard"
                     className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-brand-600/20 transition hover:bg-brand-700 hover:shadow-lg"
                   >
-                    <span>Go to Dashboard</span>
+                    <span>Go to Workspace Dashboard</span>
                     <ArrowRight className="size-4" />
                   </Link>
                   <button
@@ -152,7 +151,7 @@ export function LandingPage() {
                   to="/register"
                   className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-brand-600/20 transition hover:bg-brand-700 hover:shadow-lg"
                 >
-                  <span>Get Started Free</span>
+                  <span>Connect Your Website Free</span>
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link
@@ -292,10 +291,13 @@ export function LandingPage() {
       <section id="workflow" className="rounded-3xl border border-slate-200/80 bg-slate-50/60 p-8 sm:p-12 dark:border-slate-800 dark:bg-slate-900/40 scroll-mt-20">
         <div className="text-center">
           <h2 className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400">
-            Intelligent Workflow
+            Intelligent Website Integration
           </h2>
           <p className="mt-2 text-2xl font-extrabold text-slate-900 sm:text-3xl dark:text-white">
-            How SupportDesk AI Resolves Issues Faster
+            From Store URL to Live AI Support Workspace
+          </p>
+          <p className="mt-1 text-xs text-slate-500 max-w-lg mx-auto">
+            You already have a website. SupportDesk AI provides the entire customer-support infrastructure around it.
           </p>
         </div>
 
@@ -305,8 +307,8 @@ export function LandingPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
               1
             </div>
-            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Customer creates request</h4>
-            <p className="mt-1 text-xs text-slate-500">Ticket filed via customer portal</p>
+            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Enter Website URL</h4>
+            <p className="mt-1 text-xs text-slate-500">Provide your live business or store domain</p>
           </div>
 
           {/* Step 2 */}
@@ -314,8 +316,8 @@ export function LandingPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
               2
             </div>
-            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">SupportDesk AI processes</h4>
-            <p className="mt-1 text-xs text-slate-500">Intent, sentiment &amp; priority extracted</p>
+            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Validate &amp; Reachability</h4>
+            <p className="mt-1 text-xs text-slate-500">DNS probe, reachability &amp; SSRF protection</p>
           </div>
 
           {/* Step 3 */}
@@ -323,8 +325,8 @@ export function LandingPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
               3
             </div>
-            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">AI assists support team</h4>
-            <p className="mt-1 text-xs text-slate-500">Knowledge retrieved &amp; reply drafted</p>
+            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Verify Ownership</h4>
+            <p className="mt-1 text-xs text-slate-500">Add secure meta tag verification token</p>
           </div>
 
           {/* Step 4 */}
@@ -332,8 +334,8 @@ export function LandingPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
               4
             </div>
-            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Agent responds</h4>
-            <p className="mt-1 text-xs text-slate-500">Human reviews &amp; sends solution</p>
+            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Workspace Activated</h4>
+            <p className="mt-1 text-xs text-slate-500">Multi-tenant tickets, agents &amp; knowledge base</p>
           </div>
 
           {/* Step 5 */}
@@ -341,8 +343,8 @@ export function LandingPage() {
             <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
               5
             </div>
-            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Ticket gets resolved</h4>
-            <p className="mt-1 text-xs text-slate-500">Customer feedback logged &amp; closed</p>
+            <h4 className="mt-3 text-sm font-bold text-slate-900 dark:text-white">Embed Support Widget</h4>
+            <p className="mt-1 text-xs text-slate-500">AI answers customer questions &amp; escalates</p>
           </div>
         </div>
       </section>

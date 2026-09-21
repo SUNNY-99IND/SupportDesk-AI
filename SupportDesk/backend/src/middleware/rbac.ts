@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 
-export function requireRole(...allowedRoles: ('CUSTOMER' | 'AGENT' | 'ADMIN')[]) {
+export type UserRole = 'CUSTOMER' | 'AGENT' | 'ADMIN' | 'OWNER';
+
+export function requireRole(...allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
@@ -10,7 +12,13 @@ export function requireRole(...allowedRoles: ('CUSTOMER' | 'AGENT' | 'ADMIN')[])
       return;
     }
 
-    const hasRole = req.user.roles.some((role) => allowedRoles.includes(role));
+    // OWNER has superuser rights within their workspace and satisfies ADMIN requirements
+    const effectiveRoles: UserRole[] = [...req.user.roles];
+    if (effectiveRoles.includes('OWNER') && !effectiveRoles.includes('ADMIN')) {
+      effectiveRoles.push('ADMIN');
+    }
+
+    const hasRole = effectiveRoles.some((role) => allowedRoles.includes(role));
     if (!hasRole) {
       res.status(403).json({
         success: false,
